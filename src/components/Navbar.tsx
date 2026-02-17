@@ -1,7 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
-  Leaf,
   LayoutDashboard,
   ScanLine,
   BookOpen,
@@ -9,13 +8,16 @@ import {
   Menu,
   X,
   LogIn,
+  Map,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import depokLogo from "@/assets/depok-logo.png";
 
 const navItems = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Katalog", href: "/catalog", icon: BookOpen },
+  { label: "Peta", href: "/map", icon: Map },
   { label: "Scanner", href: "/scanner", icon: ScanLine },
   { label: "Admin", href: "/admin", icon: Settings },
 ];
@@ -29,15 +31,13 @@ export default function Navbar() {
       <div className="container flex h-16 items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 group">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-primary">
-            <Leaf className="h-5 w-5 text-primary-foreground" />
-          </div>
+          <img src={depokLogo} alt="Logo Kota Depok" className="h-10 w-10 object-contain" />
           <div className="hidden sm:block">
             <p className="font-display text-sm font-bold leading-tight text-foreground">
               Flora Depok
             </p>
             <p className="text-[10px] font-medium leading-tight text-muted-foreground">
-              Katalog Tanaman Hias
+              Katalog Tanaman Hias · Kota Depok
             </p>
           </div>
         </Link>

@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Catalog from "./pages/Catalog";
 import PlantDetail from "./pages/PlantDetail";
 import Scanner from "./pages/Scanner";
+import MapView from "./pages/MapView";
 import AdminDashboard from "./pages/admin/Dashboard";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/catalog" element={<Catalog />} />
           <Route path="/plant/:id" element={<PlantDetail />} />
           <Route path="/scanner" element={<Scanner />} />
+          <Route path="/map" element={<MapView />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/login" element={<Login />} />
           <Route path="*" element={<NotFound />} />
