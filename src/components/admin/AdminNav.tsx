@@ -1,11 +1,12 @@
 import { NavLink } from "react-router-dom"
-import { LayoutDashboard, BarChart3, Users } from "lucide-react"
+import { LayoutDashboard, BarChart3, Users, Printer } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navItems = [
-  { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { to: "/admin/stats", label: "Statistik", icon: BarChart3, end: false },
-  { to: "/admin/users", label: "Pengguna", icon: Users, end: false },
+  { to: "/admin",       label: "Dashboard",   icon: LayoutDashboard, end: true },
+  { to: "/admin/stats", label: "Statistik",   icon: BarChart3,       end: false },
+  { to: "/admin/users", label: "Pengguna",    icon: Users,           end: false },
+  { to: "/admin/print", label: "Cetak Label", icon: Printer,         end: false },
 ]
 
 export default function AdminNav() {

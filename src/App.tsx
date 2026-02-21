@@ -13,6 +13,7 @@ import MapView from "./pages/MapView";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminStats from "./pages/admin/Stats";
 import AdminUsers from "./pages/admin/Users";
+import PrintBarcodes from "./pages/admin/PrintBarcodes";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
@@ -60,6 +61,14 @@ const App = () => (
               element={
                 <RequireAuth role="admin">
                   <AdminUsers />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin/print"
+              element={
+                <RequireAuth role="admin">
+                  <PrintBarcodes />
                 </RequireAuth>
               }
             />
