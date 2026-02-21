@@ -8,5 +8,6 @@ export default defineConfig({
   css: { postcss: {} },
   test: {
     include: ['src/**/*.{test,spec}.ts'],
+    passWithNoTests: true,
   },
 })
