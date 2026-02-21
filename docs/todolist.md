@@ -155,11 +155,11 @@ Semua endpoint harus terdokumentasi di `openapi.yaml` sebelum diimplementasi.
 
 ## FASE 8 — Deployment
 
-- ⏳ **8.1** Buat `docker-compose.yml` (app + postgres + adminer)
-- ⏳ **8.2** Setup environment production (`NODE_ENV=production`)
-- ⏳ **8.3** Konfigurasi CORS untuk domain production
-- ⏳ **8.4** Setup CI/CD (GitHub Actions: lint → test → build → deploy)
-- ⏳ **8.5** Serve Swagger UI di `/api/docs` (production read-only)
+- ✅ **8.1** Buat `docker-compose.yml` (app + postgres + adminer)
+- ✅ **8.2** Setup environment production (`NODE_ENV=production`, `.env.docker`)
+- ✅ **8.3** Konfigurasi CORS untuk domain production (via `CORS_ORIGIN` env var)
+- ✅ **8.4** Setup CI/CD (GitHub Actions: lint → test → build → Docker push ke GHCR)
+- ✅ **8.5** Serve Swagger UI di `/api/docs` (production read-only via `OPENAPI_PATH`)
 
 ---
 

@@ -37,10 +37,13 @@ async function build() {
   await app.register(staticFiles, { root: uploadDir, prefix: '/uploads/' })
 
   // Swagger (load dari openapi.yaml)
-  const openapiPath = path.resolve(__dirname, '../../docs/openapi.yaml')
+  // OPENAPI_PATH env var dipakai di Docker production (path berbeda karena compiled output)
+  const openapiPath = process.env.OPENAPI_PATH
+    ? path.resolve(process.env.OPENAPI_PATH)
+    : path.resolve(__dirname, '../../docs/openapi.yaml')
   const openapiSpec = parse(readFileSync(openapiPath, 'utf-8'))
 
-  await app.register(swagger, { specification: { document: openapiSpec } })
+  await app.register(swagger, { mode: 'static', specification: { document: openapiSpec } })
   await app.register(swaggerUi, {
     routePrefix: '/api/docs',
     uiConfig: { docExpansion: 'list', deepLinking: true },

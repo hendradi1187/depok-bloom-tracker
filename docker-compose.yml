@@ -1,0 +1,81 @@
+services:
+  # ─────────────────────────────────────────
+  # PostgreSQL Database
+  # ─────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-flora2026}
+      POSTGRES_DB: flora_depok
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ─────────────────────────────────────────
+  # Backend API (Fastify + Prisma)
+  # Lokal: build dari source
+  # Production: pakai image dari GHCR (BACKEND_IMAGE env var)
+  # ─────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: ${BACKEND_IMAGE:-flora-depok-backend}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-flora2026}@postgres:5432/flora_depok
+      JWT_SECRET: ${JWT_SECRET:-flora_depok_jwt_secret_kuat_2026_kota_depok}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-86400}
+      UPLOAD_DIR: /app/uploads
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-5242880}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
+      OPENAPI_PATH: /app/docs/openapi.yaml
+    volumes:
+      - uploads_data:/app/uploads
+
+  # ─────────────────────────────────────────
+  # Frontend (React + Nginx)
+  # Lokal: build dari source
+  # Production: pakai image dari GHCR (FRONTEND_IMAGE env var)
+  # ─────────────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Kosong = pakai URL relatif, nginx yg proxy ke backend
+        VITE_API_URL: ""
+    image: ${FRONTEND_IMAGE:-flora-depok-frontend}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${APP_PORT:-80}:80"
+
+  # ─────────────────────────────────────────
+  # Adminer — DB UI (opsional)
+  # ─────────────────────────────────────────
+  adminer:
+    image: adminer:latest
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    ports:
+      - "${ADMINER_PORT:-8081}:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+
+volumes:
+  postgres_data:
+  uploads_data:
