@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String      @id @default(cuid())
+  name       String
+  email      String      @unique
+  password   String
+  role       Role        @default(officer)
+  is_active  Boolean     @default(true)
+  created_at DateTime    @default(now())
+  updated_at DateTime    @updatedAt
+  scans      ScanRecord[]
+
+  @@map("users")
+}
+
+model Category {
+  id     String  @id @default(cuid())
+  name   String  @unique
+  plants Plant[]
+
+  @@map("categories")
+}
+
+model Plant {
+  id               String       @id @default(cuid())
+  barcode          String       @unique
+  common_name      String
+  latin_name       String
+  category         Category     @relation(fields: [category_id], references: [id])
+  category_id      String
+  description      String       @default("")
+  care_guide       String       @default("")
+  location         String       @default("")
+  supplier         String       @default("")
+  supplier_contact String       @default("")
+  price            Int?
+  status           PlantStatus  @default(available)
+  grade            String?
+  latitude         Float?
+  longitude        Float?
+  images           PlantImage[]
+  scans            ScanRecord[]
+  created_at       DateTime     @default(now())
+  updated_at       DateTime     @updatedAt
+
+  @@map("plants")
+}
+
+model PlantImage {
+  id         String   @id @default(cuid())
+  url        String
+  filename   String
+  plant      Plant    @relation(fields: [plant_id], references: [id], onDelete: Cascade)
+  plant_id   String
+  created_at DateTime @default(now())
+
+  @@map("plant_images")
+}
+
+model ScanRecord {
+  id         String   @id @default(cuid())
+  plant      Plant    @relation(fields: [plant_id], references: [id])
+  plant_id   String
+  user       User?    @relation(fields: [user_id], references: [id])
+  user_id    String?
+  location   String   @default("")
+  scanned_at DateTime @default(now())
+
+  @@map("scan_records")
+}
+
+enum Role {
+  admin
+  officer
+  public
+}
+
+enum PlantStatus {
+  available
+  sold
+  on_display
+}

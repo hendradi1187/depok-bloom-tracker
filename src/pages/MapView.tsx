@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Layers, Eye, EyeOff } from "lucide-react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { MOCK_PLANTS } from "@/data/mockData";
+import { usePlants } from "@/hooks/usePlants";
 
 const DEPOK_CENTER: [number, number] = [-6.4025, 106.7942];
 
@@ -158,6 +158,7 @@ export default function MapView() {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<L.Map | null>(null);
   const layerGroups = useRef<Record<string, L.LayerGroup>>({});
+  const { data: plantsData } = usePlants({ limit: 100 });
 
   const [layers, setLayers] = useState({
     kecamatan: true,
@@ -211,23 +212,8 @@ export default function MapView() {
     rthGroup.addTo(map);
     layerGroups.current.rth = rthGroup;
 
-    // -- Tanaman layer (mock plants with approximate coordinates)
+    // -- Tanaman layer (diisi ulang saat data API masuk)
     const tanamanGroup = L.layerGroup();
-    MOCK_PLANTS.forEach((plant) => {
-      const coords = plantCoordinates[plant.id];
-      if (!coords) return;
-      const icon = createPlantIcon(plant.category);
-      L.marker(coords, { icon })
-        .bindPopup(
-          `<div style="min-width:140px">
-            <p style="font-weight:700;margin:0 0 2px">${plant.common_name}</p>
-            <p style="font-style:italic;font-size:11px;color:#6b7280;margin:0 0 4px">${plant.latin_name}</p>
-            <p style="font-size:12px;margin:0 0 4px">${plant.location}</p>
-            <a href="/plant/${plant.id}" style="font-size:12px;color:#16a34a;">Lihat detail →</a>
-          </div>`
-        )
-        .addTo(tanamanGroup);
-    });
     tanamanGroup.addTo(map);
     layerGroups.current.tanaman = tanamanGroup;
 
@@ -238,6 +224,30 @@ export default function MapView() {
       mapInstance.current = null;
     };
   }, []);
+
+  // Rebuild tanaman markers when plant data arrives
+  useEffect(() => {
+    const tanamanGroup = layerGroups.current.tanaman;
+    if (!tanamanGroup || !plantsData) return;
+    tanamanGroup.clearLayers();
+    plantsData.data.forEach((plant) => {
+      // Pakai koordinat dari DB jika ada, fallback ke lookup tabel
+      const lat = plant.latitude ?? plantCoordinates[plant.id]?.[0];
+      const lng = plant.longitude ?? plantCoordinates[plant.id]?.[1];
+      if (!lat || !lng) return;
+      const icon = createPlantIcon(plant.category);
+      L.marker([lat, lng], { icon })
+        .bindPopup(
+          `<div style="min-width:140px">
+            <p style="font-weight:700;margin:0 0 2px">${plant.common_name}</p>
+            <p style="font-style:italic;font-size:11px;color:#6b7280;margin:0 0 4px">${plant.latin_name}</p>
+            <p style="font-size:12px;margin:0 0 4px">${plant.location}</p>
+            <a href="/plant/${plant.id}" style="font-size:12px;color:#16a34a;">Lihat detail →</a>
+          </div>`
+        )
+        .addTo(tanamanGroup);
+    });
+  }, [plantsData]);
 
   // Toggle layer visibility
   useEffect(() => {
@@ -293,7 +303,7 @@ export default function MapView() {
               </span>
               {key === "tanaman" && (
                 <span className="ml-auto text-[10px] text-gray-400">
-                  {MOCK_PLANTS.length}
+                  {plantsData?.meta.total ?? 0}
                 </span>
               )}
             </button>

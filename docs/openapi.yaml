@@ -1,0 +1,955 @@
+openapi: 3.1.0
+
+info:
+  title: Flora Depok API
+  description: |
+    API backend untuk Sistem Katalog Tanaman Hias Kota Depok.
+
+    ## Autentikasi
+    Gunakan endpoint `POST /api/auth/login` untuk mendapatkan JWT token,
+    lalu sertakan di header setiap request yang membutuhkan autentikasi:
+    ```
+    Authorization: Bearer <token>
+    ```
+
+    ## Role
+    - **admin** — akses penuh (CRUD semua data, manajemen user)
+    - **officer** — bisa scan dan lihat data
+    - **public** — hanya baca (tidak perlu login)
+  version: 1.0.0
+  contact:
+    name: Dinas Lingkungan Hidup Kota Depok
+    email: admin@depok.go.id
+
+servers:
+  - url: http://localhost:3000
+    description: Development server
+  - url: https://api.flora.depok.go.id
+    description: Production server
+
+tags:
+  - name: Auth
+    description: Autentikasi dan manajemen sesi
+  - name: Plants
+    description: Data tanaman hias
+  - name: Categories
+    description: Kategori tanaman
+  - name: Scans
+    description: Riwayat scan barcode
+  - name: Upload
+    description: Upload file gambar
+  - name: Stats
+    description: Statistik dan ringkasan data
+  - name: Users
+    description: Manajemen pengguna (admin only)
+
+# ─────────────────────────────────────────
+# SECURITY SCHEMES
+# ─────────────────────────────────────────
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  # ─────────────────────────────────────────
+  # SCHEMAS
+  # ─────────────────────────────────────────
+  schemas:
+
+    # --- Plant ---
+    Plant:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "clx1abc123"
+        barcode:
+          type: string
+          example: "DPK-ORN-001"
+        common_name:
+          type: string
+          example: "Bougainvillea"
+        latin_name:
+          type: string
+          example: "Bougainvillea spectabilis"
+        category:
+          type: string
+          example: "Tanaman Merambat"
+        description:
+          type: string
+          example: "Tanaman hias merambat dengan bunga berwarna cerah..."
+        care_guide:
+          type: string
+          example: "Siram 2x sehari, beri pupuk sebulan sekali..."
+        location:
+          type: string
+          example: "Kec. Pancoran Mas, Kel. Depok Jaya"
+        supplier:
+          type: string
+          example: "Dinas Lingkungan Hidup Kota Depok"
+        latitude:
+          type: number
+          format: float
+          example: -6.4025
+          nullable: true
+        longitude:
+          type: number
+          format: float
+          example: 106.7942
+          nullable: true
+        images:
+          type: array
+          items:
+            type: string
+          example: ["https://api.flora.depok.go.id/uploads/bougainvillea-1.jpg"]
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-01-15T08:00:00.000Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-01-10T10:30:00.000Z"
+      required:
+        - id
+        - barcode
+        - common_name
+        - latin_name
+        - category
+
+    PlantInput:
+      type: object
+      properties:
+        barcode:
+          type: string
+          example: "DPK-ORN-007"
+        common_name:
+          type: string
+          example: "Melati"
+        latin_name:
+          type: string
+          example: "Jasminum sambac"
+        category:
+          type: string
+          example: "Perdu"
+        description:
+          type: string
+        care_guide:
+          type: string
+        location:
+          type: string
+        supplier:
+          type: string
+        latitude:
+          type: number
+          nullable: true
+        longitude:
+          type: number
+          nullable: true
+      required:
+        - barcode
+        - common_name
+        - latin_name
+        - category
+
+    # --- Category ---
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "cat-001"
+        name:
+          type: string
+          example: "Perdu"
+        count:
+          type: integer
+          example: 45
+      required:
+        - id
+        - name
+        - count
+
+    # --- User ---
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "usr-001"
+        name:
+          type: string
+          example: "Budi Santoso"
+        email:
+          type: string
+          format: email
+          example: "budi@depok.go.id"
+        role:
+          type: string
+          enum: [admin, officer, public]
+          example: "officer"
+        is_active:
+          type: boolean
+          example: true
+        created_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - email
+        - role
+
+    UserInput:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Siti Rahayu"
+        email:
+          type: string
+          format: email
+          example: "siti@depok.go.id"
+        password:
+          type: string
+          format: password
+          minLength: 8
+        role:
+          type: string
+          enum: [admin, officer]
+          example: "officer"
+      required:
+        - name
+        - email
+        - password
+        - role
+
+    # --- Auth ---
+    LoginInput:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          example: "admin@depok.go.id"
+        password:
+          type: string
+          format: password
+          example: "password123"
+      required:
+        - email
+        - password
+
+    AuthToken:
+      type: object
+      properties:
+        access_token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        expires_in:
+          type: integer
+          description: Waktu kedaluwarsa dalam detik
+          example: 86400
+        user:
+          $ref: '#/components/schemas/User'
+      required:
+        - access_token
+        - expires_in
+        - user
+
+    # --- ScanRecord ---
+    ScanRecord:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "scan-001"
+        user_id:
+          type: string
+          example: "usr-001"
+        plant_id:
+          type: string
+          example: "clx1abc123"
+        scanned_at:
+          type: string
+          format: date-time
+          example: "2026-02-21T09:15:00.000Z"
+        location:
+          type: string
+          example: "Taman Kota Depok"
+        plant:
+          $ref: '#/components/schemas/Plant'
+      required:
+        - id
+        - plant_id
+        - scanned_at
+
+    ScanInput:
+      type: object
+      properties:
+        barcode:
+          type: string
+          example: "DPK-ORN-001"
+        location:
+          type: string
+          example: "Taman Kota Depok"
+      required:
+        - barcode
+
+    # --- Stats ---
+    StatsSummary:
+      type: object
+      properties:
+        total_plants:
+          type: integer
+          example: 142
+        total_scans:
+          type: integer
+          example: 1284
+        total_categories:
+          type: integer
+          example: 6
+        total_users:
+          type: integer
+          example: 3
+        scans_today:
+          type: integer
+          example: 27
+        scans_this_week:
+          type: integer
+          example: 189
+      required:
+        - total_plants
+        - total_scans
+        - total_categories
+        - total_users
+
+    # --- Pagination ---
+    PaginatedPlants:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Plant'
+        meta:
+          type: object
+          properties:
+            total:
+              type: integer
+              example: 142
+            page:
+              type: integer
+              example: 1
+            limit:
+              type: integer
+              example: 20
+            total_pages:
+              type: integer
+              example: 8
+
+    PaginatedScans:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScanRecord'
+        meta:
+          type: object
+          properties:
+            total:
+              type: integer
+            page:
+              type: integer
+            limit:
+              type: integer
+            total_pages:
+              type: integer
+
+    # --- Upload ---
+    UploadResponse:
+      type: object
+      properties:
+        url:
+          type: string
+          example: "https://api.flora.depok.go.id/uploads/melati-1.jpg"
+        filename:
+          type: string
+          example: "melati-1.jpg"
+      required:
+        - url
+        - filename
+
+    # --- Error ---
+    Error:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          example: 400
+        error:
+          type: string
+          example: "Bad Request"
+        message:
+          type: string
+          example: "Barcode sudah digunakan"
+      required:
+        - statusCode
+        - error
+        - message
+
+  # ─────────────────────────────────────────
+  # RESPONSES (reusable)
+  # ─────────────────────────────────────────
+  responses:
+    Unauthorized:
+      description: Token tidak valid atau tidak disertakan
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            statusCode: 401
+            error: "Unauthorized"
+            message: "Token tidak valid"
+
+    Forbidden:
+      description: Tidak memiliki hak akses
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            statusCode: 403
+            error: "Forbidden"
+            message: "Hanya admin yang dapat melakukan aksi ini"
+
+    NotFound:
+      description: Data tidak ditemukan
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            statusCode: 404
+            error: "Not Found"
+            message: "Tanaman tidak ditemukan"
+
+    BadRequest:
+      description: Input tidak valid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+# ─────────────────────────────────────────
+# PATHS
+# ─────────────────────────────────────────
+paths:
+
+  # ── AUTH ──────────────────────────────
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login
+      description: Autentikasi user dan dapatkan JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginInput'
+      responses:
+        '200':
+          description: Login berhasil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthToken'
+        '401':
+          description: Email atau password salah
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                statusCode: 401
+                error: "Unauthorized"
+                message: "Email atau password salah"
+
+  /api/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Logout berhasil
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Logout berhasil"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      summary: Profil user yang sedang login
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Data user berhasil diambil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ── PLANTS ────────────────────────────
+  /api/plants:
+    get:
+      tags: [Plants]
+      summary: List semua tanaman
+      description: Ambil daftar tanaman dengan support pencarian, filter, dan pagination
+      parameters:
+        - name: search
+          in: query
+          description: Cari berdasarkan nama umum, nama latin, atau barcode
+          schema:
+            type: string
+          example: "bougen"
+        - name: category
+          in: query
+          description: Filter berdasarkan kategori
+          schema:
+            type: string
+          example: "Perdu"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: Daftar tanaman berhasil diambil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPlants'
+
+    post:
+      tags: [Plants]
+      summary: Tambah tanaman baru
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlantInput'
+      responses:
+        '201':
+          description: Tanaman berhasil ditambahkan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Plant'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/plants/{id}:
+    get:
+      tags: [Plants]
+      summary: Detail tanaman by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "clx1abc123"
+      responses:
+        '200':
+          description: Detail tanaman berhasil diambil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Plant'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Plants]
+      summary: Update tanaman
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlantInput'
+      responses:
+        '200':
+          description: Tanaman berhasil diupdate
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Plant'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Plants]
+      summary: Hapus tanaman
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Tanaman berhasil dihapus
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/plants/barcode/{barcode}:
+    get:
+      tags: [Plants]
+      summary: Cari tanaman by barcode
+      description: Digunakan oleh fitur Scanner untuk lookup barcode
+      parameters:
+        - name: barcode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "DPK-ORN-001"
+      responses:
+        '200':
+          description: Tanaman ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Plant'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── CATEGORIES ────────────────────────
+  /api/categories:
+    get:
+      tags: [Categories]
+      summary: List semua kategori
+      description: Ambil daftar kategori beserta jumlah tanaman di setiap kategori
+      responses:
+        '200':
+          description: Daftar kategori berhasil diambil
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+              example:
+                - id: "cat-001"
+                  name: "Perdu"
+                  count: 45
+                - id: "cat-002"
+                  name: "Pohon Hias"
+                  count: 32
+
+  # ── SCANS ─────────────────────────────
+  /api/scans:
+    post:
+      tags: [Scans]
+      summary: Catat scan baru
+      description: Menyimpan riwayat scan barcode tanaman
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScanInput'
+      responses:
+        '201':
+          description: Scan berhasil dicatat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScanRecord'
+        '404':
+          description: Barcode tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      tags: [Scans]
+      summary: Riwayat scan
+      description: Hanya bisa diakses oleh admin dan officer
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: plant_id
+          in: query
+          description: Filter scan berdasarkan tanaman
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Riwayat scan berhasil diambil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedScans'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/scans/stats:
+    get:
+      tags: [Scans]
+      summary: Statistik scan
+      description: Data scan per hari/minggu/bulan untuk grafik
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: period
+          in: query
+          description: Periode statistik
+          schema:
+            type: string
+            enum: [daily, weekly, monthly]
+            default: weekly
+      responses:
+        '200':
+          description: Statistik scan berhasil diambil
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    date:
+                      type: string
+                      example: "2026-02-21"
+                    count:
+                      type: integer
+                      example: 27
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ── UPLOAD ────────────────────────────
+  /api/upload/plant-image:
+    post:
+      tags: [Upload]
+      summary: Upload gambar tanaman
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: File gambar (JPG/PNG, maks 5MB)
+              required:
+                - file
+      responses:
+        '200':
+          description: Gambar berhasil diupload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadResponse'
+        '400':
+          description: File tidak valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                statusCode: 400
+                error: "Bad Request"
+                message: "File harus berformat JPG atau PNG dan maksimal 5MB"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ── STATS ─────────────────────────────
+  /api/stats/summary:
+    get:
+      tags: [Stats]
+      summary: Ringkasan statistik
+      description: Total tanaman, scan, kategori, dan user aktif untuk dashboard
+      responses:
+        '200':
+          description: Statistik berhasil diambil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatsSummary'
+
+  # ── USERS ─────────────────────────────
+  /api/users:
+    get:
+      tags: [Users]
+      summary: List semua user
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Daftar user berhasil diambil
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags: [Users]
+      summary: Tambah user baru
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserInput'
+      responses:
+        '201':
+          description: User berhasil ditambahkan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/users/{id}:
+    put:
+      tags: [Users]
+      summary: Update user
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                role:
+                  type: string
+                  enum: [admin, officer]
+                is_active:
+                  type: boolean
+      responses:
+        '200':
+          description: User berhasil diupdate
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Users]
+      summary: Hapus user
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: User berhasil dihapus
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'

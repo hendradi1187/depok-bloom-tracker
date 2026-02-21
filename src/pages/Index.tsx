@@ -1,14 +1,26 @@
 import Layout from "@/components/Layout";
 import StatsCard from "@/components/StatsCard";
 import PlantCard from "@/components/PlantCard";
-import { MOCK_PLANTS, MOCK_SCANS, MOCK_CATEGORIES } from "@/data/mockData";
 import { Leaf, ScanLine, MapPin, Users, ArrowRight, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import heroImage from "@/assets/hero-garden.jpg";
+import { usePlants } from "@/hooks/usePlants";
+import { useCategories } from "@/hooks/useCategories";
+import { useScans, useStatsSummary } from "@/hooks/useScans";
 
 export default function Index() {
+  const { data: statsData } = useStatsSummary();
+  const { data: categoriesData } = useCategories();
+  const { data: plantsData } = usePlants({ limit: 3 });
+  const { data: scansData } = useScans(1, 5);
+
+  const stats = statsData;
+  const categories = categoriesData ?? [];
+  const featuredPlants = plantsData?.data ?? [];
+  const recentScans = scansData?.data ?? [];
+
   return (
     <Layout>
       {/* Hero */}
@@ -51,10 +63,10 @@ export default function Index() {
       {/* Stats */}
       <section className="container -mt-10 relative z-10">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatsCard label="Total Tanaman" value={142} icon={Leaf} trend="+12 bulan ini" variant="primary" />
-          <StatsCard label="Total Scan" value={1284} icon={ScanLine} trend="+89 minggu ini" />
-          <StatsCard label="Lokasi" value={11} icon={MapPin} variant="accent" />
-          <StatsCard label="Petugas Aktif" value={24} icon={Users} variant="secondary" />
+          <StatsCard label="Total Tanaman" value={stats?.total_plants ?? 0} icon={Leaf} trend={`+${stats?.scans_this_week ?? 0} scan minggu ini`} variant="primary" />
+          <StatsCard label="Total Scan" value={stats?.total_scans ?? 0} icon={ScanLine} trend={`+${stats?.scans_today ?? 0} hari ini`} />
+          <StatsCard label="Kategori" value={stats?.total_categories ?? 0} icon={MapPin} variant="accent" />
+          <StatsCard label="Pengguna Aktif" value={stats?.total_users ?? 0} icon={Users} variant="secondary" />
         </div>
       </section>
 
@@ -67,7 +79,7 @@ export default function Index() {
           </div>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          {MOCK_CATEGORIES.map((cat) => (
+          {categories.map((cat) => (
             <Link
               key={cat.id}
               to={`/catalog?category=${cat.name}`}
@@ -97,7 +109,7 @@ export default function Index() {
           </Link>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {MOCK_PLANTS.slice(0, 3).map((plant) => (
+          {featuredPlants.map((plant) => (
             <PlantCard key={plant.id} plant={plant} />
           ))}
         </div>
@@ -117,14 +129,23 @@ export default function Index() {
                 </tr>
               </thead>
               <tbody>
-                {MOCK_SCANS.map((scan) => (
+                {recentScans.length === 0 && (
+                  <tr>
+                    <td colSpan={3} className="px-4 py-8 text-center text-muted-foreground text-sm">
+                      Belum ada data scan
+                    </td>
+                  </tr>
+                )}
+                {recentScans.map((scan) => (
                   <tr key={scan.id} className="border-b border-border/30 last:border-0 hover:bg-muted/30 transition-colors">
                     <td className="px-4 py-3 font-medium text-foreground">
-                      {scan.plant?.common_name}
+                      {scan.plant?.common_name ?? '-'}
                       <span className="block text-xs italic text-muted-foreground">{scan.plant?.latin_name}</span>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell">{scan.location}</td>
-                    <td className="px-4 py-3 text-muted-foreground text-xs">{scan.scanned_at}</td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs">
+                      {new Date(scan.scanned_at).toLocaleString('id-ID')}
+                    </td>
                   </tr>
                 ))}
               </tbody>

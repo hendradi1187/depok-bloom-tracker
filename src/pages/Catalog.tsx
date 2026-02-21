@@ -1,27 +1,30 @@
 import Layout from "@/components/Layout";
 import PlantCard from "@/components/PlantCard";
-import { MOCK_PLANTS, MOCK_CATEGORIES } from "@/data/mockData";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Search, SlidersHorizontal } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { usePlants } from "@/hooks/usePlants";
+import { useCategories } from "@/hooks/useCategories";
 
 export default function Catalog() {
+  const [searchParams] = useSearchParams();
   const [search, setSearch] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(
+    searchParams.get("category")
+  );
 
-  const filtered = useMemo(() => {
-    return MOCK_PLANTS.filter((p) => {
-      const matchesSearch =
-        !search ||
-        p.common_name.toLowerCase().includes(search.toLowerCase()) ||
-        p.latin_name.toLowerCase().includes(search.toLowerCase()) ||
-        p.barcode.toLowerCase().includes(search.toLowerCase());
-      const matchesCategory = !selectedCategory || p.category === selectedCategory;
-      return matchesSearch && matchesCategory;
-    });
-  }, [search, selectedCategory]);
+  const { data: categoriesData } = useCategories();
+  const { data: plantsData, isLoading } = usePlants({
+    search: search || undefined,
+    category: selectedCategory || undefined,
+    limit: 100,
+  });
+
+  const categories = categoriesData ?? [];
+  const plants = plantsData?.data ?? [];
+  const total = plantsData?.meta.total ?? 0;
 
   return (
     <Layout>
@@ -62,7 +65,7 @@ export default function Catalog() {
           >
             Semua
           </button>
-          {MOCK_CATEGORIES.map((cat) => (
+          {categories.map((cat) => (
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(selectedCategory === cat.name ? null : cat.name)}
@@ -79,14 +82,25 @@ export default function Catalog() {
         </div>
 
         {/* Results */}
-        <p className="text-sm text-muted-foreground mb-4">{filtered.length} tanaman ditemukan</p>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {filtered.map((plant) => (
-            <PlantCard key={plant.id} plant={plant} />
-          ))}
-        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          {isLoading ? "Memuat..." : `${total} tanaman ditemukan`}
+        </p>
 
-        {filtered.length === 0 && (
+        {isLoading ? (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="rounded-xl border border-border/50 bg-card shadow-soft h-56 animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            {plants.map((plant) => (
+              <PlantCard key={plant.id} plant={plant} />
+            ))}
+          </div>
+        )}
+
+        {!isLoading && plants.length === 0 && (
           <div className="text-center py-16">
             <p className="text-4xl mb-4">🌿</p>
             <p className="text-muted-foreground">Tidak ada tanaman yang cocok dengan pencarian Anda.</p>
