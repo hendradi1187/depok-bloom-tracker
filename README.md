@@ -1,73 +1,177 @@
-# Welcome to your Lovable project
+# Flora Depok 🌿
 
-## Project info
+**Sistem Katalog Tanaman Hias Kota Depok**
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+Aplikasi web untuk katalogisasi, pencarian, dan pemantauan tanaman hias di wilayah Kota Depok. Dilengkapi scanner QR/barcode, peta interaktif, dashboard admin, dan cetak label tanaman.
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## Teknologi
 
-**Use Lovable**
+| Layer | Stack |
+|-------|-------|
+| Frontend | React 18 + Vite + TypeScript + Tailwind CSS + shadcn/ui |
+| Backend | Fastify + TypeScript + Prisma ORM |
+| Database | PostgreSQL 16 |
+| Auth | JWT (jsonwebtoken + bcryptjs) |
+| Maps | Leaflet.js |
+| Charts | Recharts |
+| Testing | Vitest + MSW v2 + @testing-library/react |
+| Deployment | Docker + GitHub Actions (CI/CD) |
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## Fitur
 
-**Use your preferred IDE**
+- **Katalog Tanaman** — List, search, filter per kategori, pagination
+- **Scanner QR/Barcode** — Scan via kamera atau input manual, lookup otomatis
+- **Peta Interaktif** — Marker lokasi tanaman seluruh Kota Depok (Leaflet)
+- **Cetak Label QR** — Label branded dengan logo Kota Depok untuk tiap tanaman
+- **Admin Dashboard** — CRUD tanaman & pengguna, statistik scan, export CSV
+- **Statistik** — Bar chart scan harian, pie chart per kategori (Recharts)
+- **Manajemen User** — Role: `admin` | `officer` | `public`
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+---
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Struktur Proyek
 
-Follow these steps:
+```
+depok-bloom-tracker/
+├── src/                    # Frontend React
+│   ├── components/         # UI components (shadcn + custom)
+│   ├── hooks/              # React Query hooks per resource
+│   ├── pages/              # Halaman utama & admin
+│   ├── context/            # AuthContext (JWT global state)
+│   ├── lib/                # api.ts (fetch client)
+│   ├── types/              # TypeScript types
+│   └── test/               # Test frontend (MSW + hooks)
+├── backend/
+│   ├── src/
+│   │   ├── routes/         # Fastify route handlers
+│   │   ├── services/       # Business logic layer
+│   │   ├── schemas/        # Zod validation schemas
+│   │   ├── middleware/     # JWT auth middleware
+│   │   └── __tests__/      # Unit & integration tests
+│   └── prisma/             # Schema, migrasi, seeder
+├── docs/
+│   ├── openapi.yaml        # OpenAPI 3.1 spec (single source of truth)
+│   └── todolist.md         # Progress pengembangan
+├── .github/workflows/      # CI/CD GitHub Actions
+├── docker-compose.yml      # Orkestrasi Docker
+├── Dockerfile              # Frontend multi-stage build
+├── backend/Dockerfile      # Backend multi-stage build
+└── nginx.conf              # Reverse proxy + SPA routing
+```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+---
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## Menjalankan Lokal
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Prasyarat
+- Node.js 20+
+- PostgreSQL 16
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+### 1. Clone & install
+
+```bash
+git clone https://github.com/hendradi1187/depok-bloom-tracker.git
+cd depok-bloom-tracker
+
+# Frontend
+npm install
+
+# Backend
+cd backend && npm install
+```
+
+### 2. Setup database
+
+```bash
+# Sesuaikan DATABASE_URL di backend/.env
+cp backend/.env.example backend/.env
+
+# Jalankan migrasi + seed
+cd backend
+npx prisma migrate dev
+npx tsx prisma/seed.ts
+```
+
+### 3. Jalankan
+
+```bash
+# Terminal 1 — Backend (http://localhost:3000)
+cd backend && npm run dev
+
+# Terminal 2 — Frontend (http://localhost:8080)
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### Akun default
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+| Email | Password | Role |
+|-------|----------|------|
+| admin@depok.go.id | admin123 | admin |
+| petugas@depok.go.id | petugas123 | officer |
 
-**Use GitHub Codespaces**
+---
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## API Documentation
 
-## What technologies are used for this project?
+Swagger UI tersedia di **http://localhost:3000/api/docs** saat backend berjalan.
 
-This project is built with:
+Endpoint utama:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+| Method | Path | Keterangan |
+|--------|------|-----------|
+| POST | `/api/auth/login` | Login, return JWT |
+| GET | `/api/plants` | List tanaman (search, filter, paginate) |
+| GET | `/api/plants/barcode/:barcode` | Lookup untuk scanner |
+| GET | `/api/categories` | List kategori + jumlah tanaman |
+| GET | `/api/stats/summary` | Total tanaman, scan, user |
+| POST | `/api/upload/plant-image` | Upload gambar tanaman |
 
-## How can I deploy this project?
+---
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## Testing
 
-## Can I connect a custom domain to my Lovable project?
+```bash
+# Backend (32 tests: unit + integration + OpenAPI validation)
+cd backend && npx vitest run
 
-Yes, you can!
+# Frontend (7 tests: hooks + MSW)
+npm run test
+```
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+---
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## Deployment dengan Docker
+
+```bash
+# 1. Copy dan edit environment
+cp .env.docker .env
+# Edit: POSTGRES_PASSWORD, JWT_SECRET, CORS_ORIGIN
+
+# 2. Build & jalankan semua service
+docker compose up -d --build
+
+# 3. Akses
+# Aplikasi  → http://localhost
+# Adminer   → http://localhost:8081
+```
+
+### CI/CD
+
+Push ke `main` secara otomatis:
+1. **CI** — Lint, build, dan test (frontend + backend)
+2. **Docker** — Build dan push image ke GitHub Container Registry (GHCR)
+
+```
+ghcr.io/hendradi1187/depok-bloom-tracker-backend:latest
+ghcr.io/hendradi1187/depok-bloom-tracker-frontend:latest
+```
+
+---
+
+## Lisensi
+
+Dikembangkan untuk **Pemerintah Kota Depok** — Dinas Lingkungan Hidup.
