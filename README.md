@@ -174,4 +174,4 @@ ghcr.io/hendradi1187/depok-bloom-tracker-frontend:latest
 
 ## Lisensi
 
-Dikembangkan untuk **Pemerintah Kota Depok** — Dinas Lingkungan Hidup.
+Dikembangkan untuk **Pemerintah Kota Depok** — Hendra Dinata,S.KOM.
