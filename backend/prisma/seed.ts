@@ -14,6 +14,7 @@ async function main() {
     prisma.category.upsert({ where: { name: 'Sukulen' }, update: {}, create: { name: 'Sukulen' } }),
     prisma.category.upsert({ where: { name: 'Bunga Potong' }, update: {}, create: { name: 'Bunga Potong' } }),
     prisma.category.upsert({ where: { name: 'Tanaman Air' }, update: {}, create: { name: 'Tanaman Air' } }),
+    prisma.category.upsert({ where: { name: 'Bonsai' }, update: {}, create: { name: 'Bonsai' } }),
   ])
   console.log(`✅ ${categories.length} kategori selesai`)
 
