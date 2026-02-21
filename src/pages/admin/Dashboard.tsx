@@ -37,7 +37,9 @@ export default function AdminDashboard() {
   const handleSearchChange = (val: string) => {
     setSearch(val)
     setPage(1)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     clearTimeout((handleSearchChange as any)._t)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ;(handleSearchChange as any)._t = setTimeout(() => setDebouncedSearch(val), 400)
   }
 

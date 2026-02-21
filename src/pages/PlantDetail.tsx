@@ -3,7 +3,7 @@ import { usePlant } from "@/hooks/usePlants"
 import { useParams, Link } from "react-router-dom"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, MapPin, Calendar, User, Clipboard, Leaf, Phone, Tag, RefreshCw } from "lucide-react"
+import { ArrowLeft, MapPin, Calendar, User, Clipboard, Leaf, Phone, Tag, RefreshCw, type LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { PLANT_STATUS_LABEL, PLANT_STATUS_COLOR, PLANT_GRADE_COLOR } from "@/types/api"
 
@@ -121,7 +121,7 @@ export default function PlantDetail() {
 function InfoRow({
   icon: Icon, label, value, isMono, isPhone,
 }: {
-  icon: any; label: string; value: string; isMono?: boolean; isPhone?: boolean
+  icon: LucideIcon; label: string; value: string; isMono?: boolean; isPhone?: boolean
 }) {
   return (
     <div className="flex items-start gap-3 text-sm">

@@ -20,6 +20,7 @@ export default function Scanner() {
   const [error, setError] = useState<string | null>(null)
   const [manualCode, setManualCode] = useState("")
   const [loading, setLoading] = useState(false)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const scannerRef = useRef<any>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const createScan = useCreateScan()
@@ -60,7 +61,7 @@ export default function Scanner() {
 
   const stopScanner = async () => {
     if (scannerRef.current) {
-      try { await scannerRef.current.stop(); scannerRef.current.clear() } catch {}
+      try { await scannerRef.current.stop(); scannerRef.current.clear() } catch { /* abaikan error stop */ }
       scannerRef.current = null
     }
     setScanning(false)
