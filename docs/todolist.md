@@ -146,10 +146,10 @@ Semua endpoint harus terdokumentasi di `openapi.yaml` sebelum diimplementasi.
 
 ## FASE 7 — Testing
 
-- ⏳ **7.1** Unit test backend (route + service layer) dengan Vitest/Jest
-- ⏳ **7.2** Integration test endpoint API
-- ⏳ **7.3** Validasi OpenAPI spec otomatis dengan `swagger-parser`
-- ⏳ **7.4** Frontend: test hooks dengan MSW (Mock Service Worker) untuk mock API
+- ✅ **7.1** Unit test backend service layer (plant: 10 tests, auth: 5 tests) — Vitest + Prisma mock
+- ✅ **7.2** Integration test route `/api/plants` (12 tests) — Fastify `inject()`, mock service
+- ✅ **7.3** Validasi OpenAPI spec otomatis (5 tests) — `@apidevtools/swagger-parser`
+- ✅ **7.4** Frontend: test hooks `usePlants` + `usePlant` (6 tests) — MSW v2 + React Query
 
 ---
 
