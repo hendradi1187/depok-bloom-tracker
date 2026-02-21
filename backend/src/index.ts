@@ -21,7 +21,10 @@ const app = Fastify({ logger: true })
 
 async function build() {
   // Security & CORS
-  await app.register(helmet, { contentSecurityPolicy: false })
+  await app.register(helmet, {
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
   await app.register(cors, {
     origin: process.env.CORS_ORIGIN ?? 'http://localhost:8080',
     credentials: true,
