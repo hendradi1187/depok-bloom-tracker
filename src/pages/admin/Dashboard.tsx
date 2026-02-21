@@ -6,7 +6,7 @@ import PlantFormSheet from "@/components/admin/PlantFormSheet"
 import DeletePlantDialog from "@/components/admin/DeletePlantDialog"
 import {
   Leaf, ScanLine, BarChart3, Users, Plus, Search,
-  Pencil, Trash2, LogOut, ChevronLeft, ChevronRight, Download,
+  Pencil, Trash2, ChevronLeft, ChevronRight, Download,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -14,14 +14,12 @@ import { Input } from "@/components/ui/input"
 import { usePlants } from "@/hooks/usePlants"
 import { useStatsSummary } from "@/hooks/useScans"
 import { useAuth } from "@/context/AuthContext"
-import { useNavigate } from "react-router-dom"
 import { Plant } from "@/types/api"
 
 const PAGE_SIZE = 10
 
 export default function AdminDashboard() {
-  const { logout, user } = useAuth()
-  const navigate = useNavigate()
+  const { user } = useAuth()
 
   // State CRUD
   const [formOpen, setFormOpen] = useState(false)
@@ -53,11 +51,6 @@ export default function AdminDashboard() {
   const plants = plantsData?.data ?? []
   const meta = plantsData?.meta
   const totalPages = meta?.total_pages ?? 1
-
-  const handleLogout = () => {
-    logout()
-    navigate("/login")
-  }
 
   const handleExportCSV = () => {
     if (!plants.length) return
@@ -131,15 +124,6 @@ export default function AdminDashboard() {
             >
               <Download className="h-4 w-4" />
               Export CSV
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleLogout}
-              className="text-muted-foreground gap-1.5"
-            >
-              <LogOut className="h-4 w-4" />
-              Keluar
             </Button>
           </div>
         </div>

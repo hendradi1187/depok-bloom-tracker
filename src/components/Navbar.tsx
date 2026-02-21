@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -8,11 +8,14 @@ import {
   Menu,
   X,
   LogIn,
+  LogOut,
   Map,
+  UserCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import depokLogo from "@/assets/depok-logo.png";
+import { useAuth } from "@/context/AuthContext";
 
 const navItems = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -22,9 +25,22 @@ const navItems = [
   { label: "Admin", href: "/admin", icon: Settings },
 ];
 
+const roleLabel: Record<string, string> = {
+  admin: "admin",
+  officer: "petugas",
+  public: "publik",
+};
+
 export default function Navbar() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  function handleLogout() {
+    logout();
+    navigate("/");
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-card/90 backdrop-blur-xl">
@@ -68,12 +84,28 @@ export default function Navbar() {
 
         {/* Right side */}
         <div className="flex items-center gap-2">
-          <Link to="/login">
-            <Button variant="outline" size="sm" className="hidden sm:flex gap-2">
-              <LogIn className="h-4 w-4" />
-              Masuk
-            </Button>
-          </Link>
+          {user ? (
+            <div className="hidden sm:flex items-center gap-2">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted text-sm">
+                <UserCircle className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium text-foreground">{user.name}</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wide bg-primary/15 text-primary px-1.5 py-0.5 rounded">
+                  {roleLabel[user.role] ?? user.role}
+                </span>
+              </div>
+              <Button variant="outline" size="sm" className="gap-2" onClick={handleLogout}>
+                <LogOut className="h-4 w-4" />
+                Keluar
+              </Button>
+            </div>
+          ) : (
+            <Link to="/login">
+              <Button variant="outline" size="sm" className="hidden sm:flex gap-2">
+                <LogIn className="h-4 w-4" />
+                Masuk
+              </Button>
+            </Link>
+          )}
           <button
             className="md:hidden p-2 rounded-lg hover:bg-muted transition-colors"
             onClick={() => setMobileOpen(!mobileOpen)}
@@ -107,14 +139,33 @@ export default function Navbar() {
                 </Link>
               );
             })}
-            <Link
-              to="/login"
-              onClick={() => setMobileOpen(false)}
-              className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
-            >
-              <LogIn className="h-4 w-4" />
-              Masuk
-            </Link>
+            {user ? (
+              <>
+                <div className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-foreground">
+                  <UserCircle className="h-4 w-4 text-muted-foreground" />
+                  <span>{user.name}</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wide bg-primary/15 text-primary px-1.5 py-0.5 rounded">
+                    {roleLabel[user.role] ?? user.role}
+                  </span>
+                </div>
+                <button
+                  onClick={() => { setMobileOpen(false); handleLogout(); }}
+                  className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted w-full text-left"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Keluar
+                </button>
+              </>
+            ) : (
+              <Link
+                to="/login"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
+              >
+                <LogIn className="h-4 w-4" />
+                Masuk
+              </Link>
+            )}
           </nav>
         </div>
       )}
