@@ -25,8 +25,10 @@ async function build() {
     contentSecurityPolicy: false,
     crossOriginResourcePolicy: { policy: 'cross-origin' },
   })
+  // CORS - allow all origins for production deployment
+  // Untuk production, nginx sudah handle proxy jadi request datang dari internal network
   await app.register(cors, {
-    origin: process.env.CORS_ORIGIN ?? 'http://localhost:8080',
+    origin: true, // Allow all origins
     credentials: true,
   })
 

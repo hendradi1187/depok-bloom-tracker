@@ -9,7 +9,7 @@ const prisma = new PrismaClient()
 
 export async function uploadRoutes(app: FastifyInstance) {
   // POST /api/upload/plant-image
-  app.post('/plant-image', { preHandler: authenticate(['admin']) }, async (request, reply) => {
+  app.post('/plant-image', { preHandler: authenticate(['admin', 'officer']) }, async (request, reply) => {
     const data = await request.file()
     if (!data) {
       return reply.status(400).send({ statusCode: 400, error: 'Bad Request', message: 'File tidak ditemukan' })
@@ -44,8 +44,8 @@ export async function uploadRoutes(app: FastifyInstance) {
 
     await fs.writeFile(filepath, buffer)
 
-    const baseUrl = `http://localhost:${process.env.PORT ?? 3000}`
-    const url = `${baseUrl}/uploads/${filename}`
+    // Return relative path — nginx akan proxy ke backend
+    const url = `/uploads/${filename}`
 
     return reply.send({ url, filename })
   })

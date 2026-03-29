@@ -1,5 +1,6 @@
 import { useState } from "react"
 import Layout from "@/components/Layout"
+import BreadcrumbNav from "@/components/BreadcrumbNav"
 import StatsCard from "@/components/StatsCard"
 import AdminNav from "@/components/admin/AdminNav"
 import {
@@ -51,6 +52,8 @@ export default function AdminStats() {
   return (
     <Layout>
       <div className="container py-8">
+        <BreadcrumbNav />
+
         <div className="mb-6">
           <h1 className="font-display text-3xl font-bold text-foreground">Statistik</h1>
           <p className="text-muted-foreground mt-1">Laporan aktivitas dan distribusi tanaman</p>

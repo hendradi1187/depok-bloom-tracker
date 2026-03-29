@@ -1,5 +1,6 @@
 import { useState } from "react"
 import Layout from "@/components/Layout"
+import BreadcrumbNav from "@/components/BreadcrumbNav"
 import StatsCard from "@/components/StatsCard"
 import AdminNav from "@/components/admin/AdminNav"
 import PlantFormSheet from "@/components/admin/PlantFormSheet"
@@ -97,6 +98,8 @@ export default function AdminDashboard() {
   return (
     <Layout>
       <div className="container py-8">
+        <BreadcrumbNav />
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <div>

@@ -3,7 +3,7 @@ import { z } from 'zod'
 export const PlantStatusEnum = z.enum(['available', 'sold', 'on_display'])
 
 export const PlantInputSchema = z.object({
-  barcode: z.string().min(1).regex(/^DPK-[A-Z]+-\d{3}$/, 'Format barcode: DPK-XXX-000'),
+  barcode: z.string().min(1).regex(/^DPK-[A-Z]+-\d{3}$/, 'Format barcode: DPK-XXX-000').optional(), // Auto-generate jika tidak ada
   common_name: z.string().min(1),
   latin_name: z.string().min(1),
   category: z.string().min(1),
@@ -17,6 +17,7 @@ export const PlantInputSchema = z.object({
   grade: z.string().optional().nullable(),
   latitude: z.number().optional().nullable(),
   longitude: z.number().optional().nullable(),
+  images: z.array(z.string()).optional().default([]), // Array URL gambar (relative or absolute)
 })
 
 export const PlantQuerySchema = z.object({

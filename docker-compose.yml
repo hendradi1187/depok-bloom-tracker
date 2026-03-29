@@ -9,6 +9,8 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-flora2026}
       POSTGRES_DB: flora_depok
+      TZ: Asia/Jakarta
+      PGTZ: Asia/Jakarta
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -31,9 +33,12 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    ports:
+      - "3000:3000"  # Expose untuk development dengan Vite dev server
     environment:
       NODE_ENV: production
       PORT: 3000
+      TZ: Asia/Jakarta
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-flora2026}@postgres:5432/flora_depok
       JWT_SECRET: ${JWT_SECRET:-flora_depok_jwt_secret_kuat_2026_kota_depok}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-86400}

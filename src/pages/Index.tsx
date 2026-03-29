@@ -9,12 +9,15 @@ import heroImage from "@/assets/hero-garden.jpg";
 import { usePlants } from "@/hooks/usePlants";
 import { useCategories } from "@/hooks/useCategories";
 import { useScans, useStatsSummary } from "@/hooks/useScans";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Index() {
+  const { user } = useAuth();
   const { data: statsData } = useStatsSummary();
   const { data: categoriesData } = useCategories();
   const { data: plantsData } = usePlants({ limit: 3 });
-  const { data: scansData } = useScans(1, 5);
+  // Only fetch scans if user is logged in (officer/admin)
+  const { data: scansData } = useScans({ enabled: !!user && (user.role === 'officer' || user.role === 'admin') });
 
   const stats = statsData;
   const categories = categoriesData ?? [];
@@ -115,44 +118,46 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Recent Scans */}
-      <section className="container pb-16">
-        <h2 className="font-display text-2xl font-bold text-foreground mb-6">Scan Terbaru</h2>
-        <div className="rounded-xl border border-border/50 bg-card shadow-soft overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border/50 bg-muted/50">
-                  <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Tanaman</th>
-                  <th className="text-left px-4 py-3 font-semibold text-muted-foreground hidden sm:table-cell">Lokasi</th>
-                  <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Waktu</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentScans.length === 0 && (
-                  <tr>
-                    <td colSpan={3} className="px-4 py-8 text-center text-muted-foreground text-sm">
-                      Belum ada data scan
-                    </td>
+      {/* Recent Scans - Only show for logged in users */}
+      {user && (user.role === 'officer' || user.role === 'admin') && (
+        <section className="container pb-16">
+          <h2 className="font-display text-2xl font-bold text-foreground mb-6">Scan Terbaru</h2>
+          <div className="rounded-xl border border-border/50 bg-card shadow-soft overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border/50 bg-muted/50">
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Tanaman</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground hidden sm:table-cell">Lokasi</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Waktu</th>
                   </tr>
-                )}
-                {recentScans.map((scan) => (
-                  <tr key={scan.id} className="border-b border-border/30 last:border-0 hover:bg-muted/30 transition-colors">
-                    <td className="px-4 py-3 font-medium text-foreground">
-                      {scan.plant?.common_name ?? '-'}
-                      <span className="block text-xs italic text-muted-foreground">{scan.plant?.latin_name}</span>
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell">{scan.location}</td>
-                    <td className="px-4 py-3 text-muted-foreground text-xs">
-                      {new Date(scan.scanned_at).toLocaleString('id-ID')}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {recentScans.length === 0 && (
+                    <tr>
+                      <td colSpan={3} className="px-4 py-8 text-center text-muted-foreground text-sm">
+                        Belum ada data scan
+                      </td>
+                    </tr>
+                  )}
+                  {recentScans.map((scan) => (
+                    <tr key={scan.id} className="border-b border-border/30 last:border-0 hover:bg-muted/30 transition-colors">
+                      <td className="px-4 py-3 font-medium text-foreground">
+                        {scan.plant?.common_name ?? '-'}
+                        <span className="block text-xs italic text-muted-foreground">{scan.plant?.latin_name}</span>
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell">{scan.location}</td>
+                      <td className="px-4 py-3 text-muted-foreground text-xs">
+                        {new Date(scan.scanned_at).toLocaleString('id-ID')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
     </Layout>
   );
 }

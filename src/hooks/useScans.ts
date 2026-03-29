@@ -5,10 +5,21 @@ import { PaginatedResponse, ScanRecord, StatsSummary } from '@/types/api'
 export type ScanPeriod = 'daily' | 'weekly' | 'monthly'
 export interface ScanStat { date: string; count: number }
 
-export function useScans(page = 1, limit = 20) {
+interface UseScansOptions {
+  page?: number;
+  limit?: number;
+  userId?: string;
+  enabled?: boolean;
+}
+
+export function useScans(options: UseScansOptions = {}) {
+  const { page = 1, limit = 20, userId, enabled = true } = options;
+  const userIdParam = userId ? `&userId=${userId}` : '';
+
   return useQuery<PaginatedResponse<ScanRecord>>({
-    queryKey: ['scans', page, limit],
-    queryFn: () => api.get(`/api/scans?page=${page}&limit=${limit}`),
+    queryKey: ['scans', page, limit, userId],
+    queryFn: () => api.get(`/api/scans?page=${page}&limit=${limit}${userIdParam}`),
+    enabled,
   })
 }
 

@@ -18,7 +18,7 @@ export default function Layout({ children, hideNav }: LayoutProps) {
             <img src={depokLogo} alt="Logo Kota Depok" className="h-8 w-8 object-contain" />
             <div>
               <p className="font-medium text-foreground">Katalog Tanaman Hias Kota Depok</p>
-              <p>Dinas Pertamanan dan Kebersihan</p>
+              <p>Dinas Ketahanan Pangan, Pertanian, dan Perikanan Kota Depok</p>
             </div>
           </div>
           <p>© {new Date().getFullYear()} Pemerintah Kota Depok. Hak cipta dilindungi.</p>

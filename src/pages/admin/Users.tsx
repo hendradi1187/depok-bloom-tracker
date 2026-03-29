@@ -1,5 +1,6 @@
 import { useState } from "react"
 import Layout from "@/components/Layout"
+import BreadcrumbNav from "@/components/BreadcrumbNav"
 import AdminNav from "@/components/admin/AdminNav"
 import UserFormDialog from "@/components/admin/UserFormDialog"
 import { Plus, Pencil, Trash2, ShieldCheck, Shield, User as UserIcon } from "lucide-react"
@@ -49,6 +50,8 @@ export default function AdminUsers() {
   return (
     <Layout>
       <div className="container py-8">
+        <BreadcrumbNav />
+
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="font-display text-3xl font-bold text-foreground">Pengguna</h1>

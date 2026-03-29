@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Plant } from "@/types/api"
 import { useDeletePlant } from "@/hooks/usePlants"
+import { useNotifications } from "@/hooks/useNotifications"
 import { toast } from "sonner"
 
 interface DeletePlantDialogProps {
@@ -19,12 +20,22 @@ interface DeletePlantDialogProps {
 
 export default function DeletePlantDialog({ plant, onOpenChange }: DeletePlantDialogProps) {
   const deletePlant = useDeletePlant()
+  const { addNotification } = useNotifications()
 
   const handleConfirm = () => {
     if (!plant) return
     deletePlant.mutate(plant.id, {
       onSuccess: () => {
         toast.success(`"${plant.common_name}" berhasil dihapus`)
+        addNotification({
+          type: 'plant_deleted',
+          title: 'Tanaman Dihapus',
+          message: `${plant.common_name} telah dihapus dari katalog`,
+          read: false,
+          metadata: {
+            plant_name: plant.common_name,
+          },
+        })
         onOpenChange(false)
       },
       onError: (err) => {

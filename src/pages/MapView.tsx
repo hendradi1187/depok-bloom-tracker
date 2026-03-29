@@ -1,8 +1,11 @@
 import Layout from "@/components/Layout";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Layers, Eye, EyeOff } from "lucide-react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import "leaflet.markercluster";
+import "leaflet.markercluster/dist/MarkerCluster.css";
+import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import { usePlants } from "@/hooks/usePlants";
 
 const DEPOK_CENTER: [number, number] = [-6.4025, 106.7942];
@@ -87,6 +90,55 @@ const kecamatanZones = [
   },
 ];
 
+// Lokasi Kebun Bonsai di Depok
+const bonsaiLocations = [
+  {
+    name: "Jl. Kp. Benda Bar. No.66-71",
+    address: "Cipayung, Kota Depok, Jawa Barat 16437",
+    coord: [-6.414633340581161, 106.78897214078167] as [number, number],
+  },
+  {
+    name: "Kebun Bonsai Beji",
+    address: "Jl. Mandor Basyir II No.58C, Kukusan, Beji, Kota Depok",
+    coord: [-6.373882074760148, 106.81407491533103] as [number, number],
+  },
+  {
+    name: "Gallery Bonsai Sawangan",
+    address: "Sawangan, Kota Depok",
+    coord: [-6.42091428479333, 106.75058942883035] as [number, number],
+  },
+  {
+    name: "Sanggar Senam Nanda",
+    address: "Jl. sekitar Kukusan, Depok",
+    coord: [-6.364974523278928, 106.84126091007333] as [number, number],
+  },
+  {
+    name: "Jl. HR. Basorun No.71",
+    address: "Depok",
+    coord: [-6.444576857238909, 106.80303092883828] as [number, number],
+  },
+  {
+    name: "PPBI Cabang Depok Ranting Tapos",
+    address: "Jl. Lembah Raya No.5, Tapos, Kota Depok",
+    coord: [-6.43066855081249, 106.88076369999195] as [number, number],
+  },
+  {
+    name: "Ranting Sukmajaya",
+    address: "Sukmajaya, Kota Depok",
+    coord: [-6.409959666479041, 106.84662774002274] as [number, number],
+  },
+  {
+    name: "Say Bonsai",
+    address: "Jl. Cemara Raya Blok A2 No.6, Sukamaju, Kota Depok",
+    coord: [-6.41686462928847, 106.85317108649438] as [number, number],
+  },
+  {
+    name: "PPBI Depok Suiseki",
+    address: "Depok",
+    coord: [-6.399176788399981, 106.88649591532426] as [number, number],
+  },
+];
+
 // RTH (Ruang Terbuka Hijau) notable areas
 const rthAreas = [
   {
@@ -154,16 +206,33 @@ function createPlantIcon(category?: string) {
   });
 }
 
+function createBonsaiIcon() {
+  const color = "#8b5cf6"; // purple color for bonsai
+  return L.divIcon({
+    className: "",
+    html: `<div style="
+      width:30px;height:30px;border-radius:50%;
+      background:${color}33;border:2px solid ${color};
+      display:flex;align-items:center;justify-content:center;
+      color:${color};font-size:12px;font-weight:700;font-family:monospace;
+    ">🌳</div>`,
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
+    popupAnchor: [0, -16],
+  });
+}
+
 export default function MapView() {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<L.Map | null>(null);
-  const layerGroups = useRef<Record<string, L.LayerGroup>>({});
+  const layerGroups = useRef<Record<string, L.LayerGroup | L.MarkerClusterGroup>>({});
   const { data: plantsData } = usePlants({ limit: 100 });
 
   const [layers, setLayers] = useState({
     kecamatan: true,
     rth: true,
     tanaman: true,
+    bonsai: true,
   });
 
   // Initialize map once
@@ -173,8 +242,11 @@ export default function MapView() {
     const map = L.map(mapRef.current, {
       center: DEPOK_CENTER,
       zoom: 13,
-      zoomControl: true,
+      zoomControl: false, // disable default, tambahkan manual di posisi lain
     });
+
+    // Tambahkan zoom control di pojok kanan bawah
+    L.control.zoom({ position: "bottomright" }).addTo(map);
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: "© OpenStreetMap contributors",
@@ -212,10 +284,49 @@ export default function MapView() {
     rthGroup.addTo(map);
     layerGroups.current.rth = rthGroup;
 
-    // -- Tanaman layer (diisi ulang saat data API masuk)
-    const tanamanGroup = L.layerGroup();
+    // -- Tanaman layer dengan clustering (diisi ulang saat data API masuk)
+    const tanamanGroup = L.markerClusterGroup({
+      showCoverageOnHover: false,
+      maxClusterRadius: 50,
+      spiderfyOnMaxZoom: true,
+      disableClusteringAtZoom: 18,
+      iconCreateFunction: (cluster) => {
+        const count = cluster.getChildCount();
+        let size = "small";
+        let dimension = 36;
+        if (count >= 10) { size = "medium"; dimension = 44; }
+        if (count >= 50) { size = "large"; dimension = 52; }
+        return L.divIcon({
+          html: `<div style="
+            width:${dimension}px;height:${dimension}px;border-radius:50%;
+            background:linear-gradient(135deg, #22c55e, #16a34a);
+            display:flex;align-items:center;justify-content:center;
+            color:white;font-size:${size === "large" ? 14 : 12}px;font-weight:700;
+            box-shadow:0 2px 8px rgba(0,0,0,0.3);border:2px solid white;
+          ">${count}</div>`,
+          className: `marker-cluster marker-cluster-${size}`,
+          iconSize: L.point(dimension, dimension),
+        });
+      },
+    });
     tanamanGroup.addTo(map);
     layerGroups.current.tanaman = tanamanGroup;
+
+    // -- Bonsai layer (kebun bonsai)
+    const bonsaiGroup = L.layerGroup();
+    bonsaiLocations.forEach((location) => {
+      const icon = createBonsaiIcon();
+      L.marker(location.coord, { icon })
+        .bindPopup(
+          `<div style="min-width:160px">
+            <p style="font-weight:700;margin:0 0 4px;color:#8b5cf6">🌳 ${location.name}</p>
+            <p style="font-size:12px;color:#6b7280;margin:0">${location.address}</p>
+          </div>`
+        )
+        .addTo(bonsaiGroup);
+    });
+    bonsaiGroup.addTo(map);
+    layerGroups.current.bonsai = bonsaiGroup;
 
     mapInstance.current = map;
 
@@ -260,13 +371,15 @@ export default function MapView() {
     });
   }, [layers]);
 
-  const toggleLayer = (key: keyof typeof layers) =>
+  const toggleLayer = useCallback((key: keyof typeof layers) => {
     setLayers((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, []);
 
   const layerConfig = [
     { key: "kecamatan" as const, label: "Kecamatan",  color: "#22c55e" },
     { key: "rth"       as const, label: "RTH / Situ", color: "#0ea5e9" },
     { key: "tanaman"   as const, label: "Tanaman",     color: "#f97316" },
+    { key: "bonsai"    as const, label: "Kebun Bonsai", color: "#8b5cf6" },
   ];
 
   return (
@@ -306,6 +419,11 @@ export default function MapView() {
                   {plantsData?.meta.total ?? 0}
                 </span>
               )}
+              {key === "bonsai" && (
+                <span className="ml-auto text-[10px] text-gray-400">
+                  {bonsaiLocations.length}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -339,6 +457,15 @@ export default function MapView() {
               <div className="flex items-center gap-2">
                 <div className="w-5 h-3 rounded flex-shrink-0" style={{ background: "#84cc1655", border: "1.5px solid #84cc16" }} />
                 <span className="text-[11px] text-gray-600">Taman Kota</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-5 h-5 rounded-full flex items-center justify-content:center text-[9px] flex-shrink-0 flex items-center justify-center"
+                  style={{ background: "#8b5cf633", border: "1.5px solid #8b5cf6" }}
+                >
+                  🌳
+                </div>
+                <span className="text-[11px] text-gray-600">Kebun Bonsai</span>
               </div>
             </div>
           </div>

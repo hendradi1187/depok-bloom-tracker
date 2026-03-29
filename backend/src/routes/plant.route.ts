@@ -34,7 +34,7 @@ export async function plantRoutes(app: FastifyInstance) {
   })
 
   // POST /api/plants
-  app.post('/', { preHandler: authenticate(['admin']) }, async (request, reply) => {
+  app.post('/', { preHandler: authenticate(['admin', 'officer']) }, async (request, reply) => {
     const body = PlantInputSchema.safeParse(request.body)
     if (!body.success) {
       return reply.status(400).send({ statusCode: 400, error: 'Bad Request', message: body.error.errors[0].message })
@@ -48,7 +48,7 @@ export async function plantRoutes(app: FastifyInstance) {
   })
 
   // PUT /api/plants/:id
-  app.put('/:id', { preHandler: authenticate(['admin']) }, async (request, reply) => {
+  app.put('/:id', { preHandler: authenticate(['admin', 'officer']) }, async (request, reply) => {
     const { id } = request.params as { id: string }
     const body = PlantInputSchema.safeParse(request.body)
     if (!body.success) {

@@ -1,21 +1,28 @@
+import { memo, useMemo } from "react"
 import { Plant, PLANT_STATUS_LABEL, PLANT_STATUS_COLOR, PLANT_GRADE_COLOR } from "@/types/api"
 import { Link } from "react-router-dom"
 import { MapPin } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import LazyImage from "./LazyImage"
 
 interface PlantCardProps {
   plant: Plant
 }
 
-function formatPrice(price: number | null) {
-  if (!price) return null
-  return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(price)
-}
+const priceFormatter = new Intl.NumberFormat("id-ID", {
+  style: "currency",
+  currency: "IDR",
+  maximumFractionDigits: 0
+})
 
-export default function PlantCard({ plant }: PlantCardProps) {
+function PlantCard({ plant }: PlantCardProps) {
   const imageUrl = plant.images?.[0]
-  const priceStr = formatPrice(plant.price)
+
+  // Memoize price formatting to avoid re-computation
+  const priceStr = useMemo(() => {
+    return plant.price ? priceFormatter.format(plant.price) : null
+  }, [plant.price])
 
   return (
     <Link
@@ -25,11 +32,16 @@ export default function PlantCard({ plant }: PlantCardProps) {
       {/* Gambar */}
       <div className="aspect-[4/3] bg-gradient-primary/10 flex items-center justify-center relative overflow-hidden">
         {imageUrl ? (
-          <img src={imageUrl} alt={plant.common_name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+          <LazyImage
+            src={imageUrl}
+            alt={plant.common_name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            placeholderClassName="bg-gradient-primary/10"
+          />
         ) : (
           <div className="text-5xl opacity-30 group-hover:scale-110 transition-transform duration-500">🌿</div>
         )}
-        <Badge className="absolute top-3 left-3 bg-primary/90 text-primary-foreground text-[10px] font-mono">
+        <Badge className="absolute top-3 left-3 bg-primary/90 text-primary-foreground text-[10px] font-mono z-10">
           {plant.barcode}
         </Badge>
         {/* Status badge */}
@@ -81,3 +93,10 @@ export default function PlantCard({ plant }: PlantCardProps) {
     </Link>
   )
 }
+
+// Memoize component to prevent unnecessary re-renders
+export default memo(PlantCard, (prevProps, nextProps) => {
+  // Custom comparison - only re-render if plant data actually changed
+  return prevProps.plant.id === nextProps.plant.id &&
+         prevProps.plant.updated_at === nextProps.plant.updated_at
+})

@@ -44,7 +44,11 @@ export function useCreatePlant() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (data: Partial<Plant>) => api.post<Plant>('/api/plants', data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['plants'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['plants'] })
+      qc.invalidateQueries({ queryKey: ['categories'] })
+      qc.invalidateQueries({ queryKey: ['stats'] })
+    },
   })
 }
 
@@ -53,7 +57,11 @@ export function useUpdatePlant() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<Plant> }) =>
       api.put<Plant>(`/api/plants/${id}`, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['plants'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['plants'] })
+      qc.invalidateQueries({ queryKey: ['categories'] })
+      qc.invalidateQueries({ queryKey: ['stats'] })
+    },
   })
 }
 
@@ -61,6 +69,10 @@ export function useDeletePlant() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => api.delete(`/api/plants/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['plants'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['plants'] })
+      qc.invalidateQueries({ queryKey: ['categories'] })
+      qc.invalidateQueries({ queryKey: ['stats'] })
+    },
   })
 }

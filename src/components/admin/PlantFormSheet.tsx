@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -18,13 +18,13 @@ import { Separator } from "@/components/ui/separator"
 import { Plant } from "@/types/api"
 import { useCategories } from "@/hooks/useCategories"
 import { useCreatePlant, useUpdatePlant } from "@/hooks/usePlants"
+import { useNotifications } from "@/hooks/useNotifications"
 import { toast } from "sonner"
+import { api } from "@/lib/api"
+import { Upload, X } from "lucide-react"
+import LocationPicker from "@/components/LocationPicker"
 
 const plantSchema = z.object({
-  barcode: z
-    .string()
-    .min(1, "Barcode wajib diisi")
-    .regex(/^DPK-[A-Z]+-\d{3}$/, "Format: DPK-XXX-000 (contoh: DPK-ORN-007)"),
   common_name: z.string().min(1, "Nama umum wajib diisi"),
   latin_name: z.string().min(1, "Nama latin wajib diisi"),
   category: z.string().min(1, "Kategori wajib dipilih"),
@@ -54,11 +54,16 @@ export default function PlantFormSheet({ open, onOpenChange, plant }: PlantFormS
   const categories = categoriesData ?? []
   const createPlant = useCreatePlant()
   const updatePlant = useUpdatePlant()
+  const { addNotification } = useNotifications()
+
+  // State untuk upload foto
+  const [uploadedImages, setUploadedImages] = useState<string[]>([])
+  const [uploading, setUploading] = useState(false)
 
   const form = useForm<PlantFormValues>({
     resolver: zodResolver(plantSchema),
     defaultValues: {
-      barcode: "", common_name: "", latin_name: "", category: "",
+      common_name: "", latin_name: "", category: "",
       status: "available", grade: null, price: null,
       description: "", care_guide: "", location: "",
       supplier: "", supplier_contact: "", latitude: null, longitude: null,
@@ -68,7 +73,6 @@ export default function PlantFormSheet({ open, onOpenChange, plant }: PlantFormS
   useEffect(() => {
     if (open) {
       form.reset(plant ? {
-        barcode: plant.barcode,
         common_name: plant.common_name,
         latin_name: plant.latin_name,
         category: plant.category,
@@ -83,26 +87,86 @@ export default function PlantFormSheet({ open, onOpenChange, plant }: PlantFormS
         latitude: plant.latitude ?? null,
         longitude: plant.longitude ?? null,
       } : {
-        barcode: "", common_name: "", latin_name: "", category: "",
+        common_name: "", latin_name: "", category: "",
         status: "available", grade: null, price: null,
         description: "", care_guide: "", location: "",
         supplier: "", supplier_contact: "", latitude: null, longitude: null,
       })
+      // Load images jika edit
+      setUploadedImages(plant?.images || [])
     }
   }, [open, plant])
 
   const isPending = createPlant.isPending || updatePlant.isPending
 
+  // Upload foto
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const formData = new FormData()
+    formData.append('file', file)
+
+    setUploading(true)
+    try {
+      const result = await api.post<{ url: string }>('/api/upload/plant-image', formData)
+      setUploadedImages([...uploadedImages, result.url])
+      toast.success('Foto berhasil diupload')
+    } catch (err: any) {
+      toast.error(err.message || 'Gagal upload foto')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const removeImage = (url: string) => {
+    setUploadedImages(uploadedImages.filter((img) => img !== url))
+  }
+
   const onSubmit = (values: PlantFormValues) => {
-    const payload = { ...values, price: values.price ?? null, latitude: values.latitude ?? null, longitude: values.longitude ?? null }
+    const payload = {
+      ...values,
+      price: values.price ?? null,
+      latitude: values.latitude ?? null,
+      longitude: values.longitude ?? null,
+      images: uploadedImages, // Tambah images
+    }
     if (isEdit && plant) {
       updatePlant.mutate({ id: plant.id, data: payload }, {
-        onSuccess: () => { toast.success(`"${values.common_name}" berhasil diperbarui`); onOpenChange(false) },
+        onSuccess: () => {
+          toast.success(`"${values.common_name}" berhasil diperbarui`)
+          addNotification({
+            type: 'plant_updated',
+            title: 'Tanaman Diperbarui',
+            message: `Informasi ${values.common_name} telah diperbarui`,
+            link: `/plant/${plant.id}`,
+            read: false,
+            metadata: {
+              plant_id: plant.id,
+              plant_name: values.common_name,
+            },
+          })
+          onOpenChange(false)
+        },
         onError: (err) => toast.error(err.message),
       })
     } else {
       createPlant.mutate(payload, {
-        onSuccess: () => { toast.success(`"${values.common_name}" berhasil ditambahkan`); onOpenChange(false) },
+        onSuccess: (data) => {
+          toast.success(`"${values.common_name}" berhasil ditambahkan`)
+          addNotification({
+            type: 'plant_created',
+            title: 'Tanaman Baru Ditambahkan',
+            message: `${values.common_name} telah ditambahkan ke katalog`,
+            link: `/plant/${data.id}`,
+            read: false,
+            metadata: {
+              plant_id: data.id,
+              plant_name: values.common_name,
+            },
+          })
+          onOpenChange(false)
+        },
         onError: (err) => toast.error(err.message),
       })
     }
@@ -123,17 +187,46 @@ export default function PlantFormSheet({ open, onOpenChange, plant }: PlantFormS
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
 
+            {/* ── FOTO TANAMAN ── */}
+            <div className="space-y-3">
+              <label className="text-sm font-medium">Foto Tanaman</label>
+              <div className="grid grid-cols-4 gap-3">
+                {uploadedImages.map((url, idx) => (
+                  <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-border bg-muted">
+                    <img src={url} alt={`Upload ${idx + 1}`} className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(url)}
+                      className="absolute top-1 right-1 p-1 bg-destructive text-destructive-foreground rounded-full hover:bg-destructive/90"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+                {uploadedImages.length < 4 && (
+                  <label className="aspect-square rounded-lg border-2 border-dashed border-border hover:border-primary cursor-pointer flex flex-col items-center justify-center gap-2 bg-muted/30 hover:bg-muted/50 transition-colors">
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={handleImageUpload}
+                      disabled={uploading}
+                      className="hidden"
+                    />
+                    {uploading ? (
+                      <div className="text-xs text-muted-foreground">Uploading...</div>
+                    ) : (
+                      <>
+                        <Upload className="h-5 w-5 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">Upload</span>
+                      </>
+                    )}
+                  </label>
+                )}
+              </div>
+              <p className="text-[11px] text-muted-foreground">Maksimal 4 foto (JPG, PNG, atau WEBP)</p>
+            </div>
+
             {/* ── IDENTITAS ── */}
-            <FormField control={form.control} name="barcode" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Barcode *</FormLabel>
-                <FormControl>
-                  <Input placeholder="DPK-ORN-007" {...field} disabled={isEdit} className="font-mono" />
-                </FormControl>
-                <p className="text-[11px] text-muted-foreground">Format: DPK-[KATEGORI]-[NOMOR]</p>
-                <FormMessage />
-              </FormItem>
-            )} />
 
             <div className="grid grid-cols-2 gap-4">
               <FormField control={form.control} name="common_name" render={({ field }) => (
@@ -282,27 +375,17 @@ export default function PlantFormSheet({ open, onOpenChange, plant }: PlantFormS
               </FormItem>
             )} />
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField control={form.control} name="latitude" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Latitude</FormLabel>
-                  <FormControl>
-                    <Input type="number" step="any" placeholder="-6.4025" {...field} value={field.value ?? ""}
-                      onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="longitude" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Longitude</FormLabel>
-                  <FormControl>
-                    <Input type="number" step="any" placeholder="106.7942" {...field} value={field.value ?? ""}
-                      onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
+            {/* Map Picker untuk pilih lokasi */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Pilih Lokasi di Peta</label>
+              <LocationPicker
+                latitude={form.watch("latitude") ?? null}
+                longitude={form.watch("longitude") ?? null}
+                onChange={(lat, lng) => {
+                  form.setValue("latitude", lat)
+                  form.setValue("longitude", lng)
+                }}
+              />
             </div>
 
             <SheetFooter className="pt-4 gap-2">

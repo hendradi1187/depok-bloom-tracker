@@ -11,6 +11,17 @@ export default defineConfig(({ mode }) => ({
     hmr: {
       overlay: false,
     },
+    // Proxy API dan uploads ke backend (untuk development)
+    proxy: {
+      '/api': {
+        target: process.env.VITE_API_URL || 'http://0.0.0.0:3000',
+        changeOrigin: true,
+      },
+      '/uploads': {
+        target: process.env.VITE_API_URL || 'http://0.0.0.0:3000',
+        changeOrigin: true,
+      },
+    },
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {

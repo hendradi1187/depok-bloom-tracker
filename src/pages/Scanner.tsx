@@ -2,12 +2,14 @@ import Layout from "@/components/Layout"
 import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Camera, X, ScanLine, AlertCircle, Tag, Phone } from "lucide-react"
-import { Link } from "react-router-dom"
+import { Camera, X, ScanLine, AlertCircle, Tag, Phone, ClipboardList } from "lucide-react"
+import { Link, useNavigate } from "react-router-dom"
 import { Plant, PLANT_STATUS_LABEL, PLANT_STATUS_COLOR, PLANT_GRADE_COLOR } from "@/types/api"
 import { api } from "@/lib/api"
 import { useCreateScan } from "@/hooks/useScans"
+import { useAuth } from "@/context/AuthContext"
 import { cn } from "@/lib/utils"
+import { toast } from "@/hooks/use-toast"
 
 function formatPrice(price: number | null | undefined) {
   if (!price) return null
@@ -15,15 +17,21 @@ function formatPrice(price: number | null | undefined) {
 }
 
 export default function Scanner() {
+  const navigate = useNavigate()
+  const { user } = useAuth()
   const [scanning, setScanning] = useState(false)
   const [result, setResult] = useState<Plant | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [manualCode, setManualCode] = useState("")
   const [loading, setLoading] = useState(false)
+  const [recordingScan, setRecordingScan] = useState(false)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const scannerRef = useRef<any>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const createScan = useCreateScan()
+
+  // Check if user can record scans (officer or admin only)
+  const canRecordScan = user && (user.role === "officer" || user.role === "admin")
 
   const lookupBarcode = async (code: string) => {
     setLoading(true)
@@ -31,11 +39,30 @@ export default function Scanner() {
     try {
       const plant = await api.get<Plant>(`/api/plants/barcode/${encodeURIComponent(code)}`)
       setResult(plant)
-      createScan.mutate({ barcode: code })
+      setLoading(false)
     } catch {
       setError(`Barcode "${code}" tidak ditemukan dalam database.`)
-    } finally {
       setLoading(false)
+    }
+  }
+
+  const handleRecordScan = async () => {
+    if (!result || !canRecordScan) return
+    setRecordingScan(true)
+    try {
+      await createScan.mutateAsync({ barcode: result.barcode })
+      toast({
+        title: "Pemindaian Dicatat",
+        description: `Pemindaian ${result.common_name} berhasil dicatat.`,
+      })
+    } catch {
+      toast({
+        title: "Gagal Mencatat",
+        description: "Terjadi kesalahan saat mencatat pemindaian.",
+        variant: "destructive",
+      })
+    } finally {
+      setRecordingScan(false)
     }
   }
 
@@ -219,13 +246,25 @@ export default function Scanner() {
               )}
 
               {/* Tombol aksi */}
-              <div className="flex gap-2 pt-1">
-                <Link to={`/plant/${result.id}`} className="flex-1">
-                  <Button className="w-full bg-gradient-primary text-primary-foreground">Detail Lengkap</Button>
-                </Link>
-                <Button variant="outline" onClick={() => { setResult(null); setManualCode("") }}>
-                  Scan Lagi
-                </Button>
+              <div className="space-y-2 pt-1">
+                {canRecordScan && (
+                  <Button
+                    onClick={handleRecordScan}
+                    disabled={recordingScan}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <ClipboardList className="h-4 w-4 mr-2" />
+                    {recordingScan ? "Mencatat..." : "Catat Pemindaian"}
+                  </Button>
+                )}
+                <div className="flex gap-2">
+                  <Link to={`/plant/${result.id}`} className="flex-1">
+                    <Button className="w-full bg-gradient-primary text-primary-foreground">Detail Lengkap</Button>
+                  </Link>
+                  <Button variant="outline" onClick={() => { setResult(null); setManualCode("") }}>
+                    Scan Lagi
+                  </Button>
+                </div>
               </div>
             </div>
           </div>

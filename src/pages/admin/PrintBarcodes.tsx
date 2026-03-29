@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { QRCodeSVG } from "qrcode.react"
 import Layout from "@/components/Layout"
-import AdminNav from "@/components/admin/AdminNav"
+import BreadcrumbNav from "@/components/BreadcrumbNav"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Printer, CheckSquare, Square, RotateCcw, Settings2 } from "lucide-react"
@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/select"
 import { usePlants } from "@/hooks/usePlants"
 import { Plant } from "@/types/api"
+import depokLogo from "@/assets/depok-logo.png"
 
 // ── Warna brand (harus eksplisit untuk print) ──────────────────
 const C = {
@@ -80,13 +81,26 @@ function PlantLabel({ plant, cfg, logoSrc }: LabelProps) {
         padding: `0 ${p}px`,
         gap: 8,
       }}>
-        {logoSrc && (
+        <div style={{
+          height: headerH * 0.72,
+          aspectRatio: "650/841",
+          background: "white",
+          borderRadius: 4,
+          padding: 4,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center"
+        }}>
           <img
-            src={logoSrc}
+            src={logoSrc || depokLogo}
             alt="Logo Kota Depok"
-            style={{ height: headerH * 0.72, width: "auto", objectFit: "contain", filter: "brightness(0) invert(1)", opacity: 0.95 }}
+            style={{
+              height: "100%",
+              width: "auto",
+              objectFit: "contain"
+            }}
           />
-        )}
+        </div>
         <div style={{ flex: 1 }}>
           <div style={{ color: C.white, fontWeight: 700, fontSize: fontSub + 1, letterSpacing: "0.04em", lineHeight: 1.15 }}>
             FLORA DEPOK
@@ -121,7 +135,7 @@ function PlantLabel({ plant, cfg, logoSrc }: LabelProps) {
             <div key={i} style={{ position: "absolute", width: 10, height: 10, borderRadius: 2, ...style }} />
           ))}
           <QRCodeSVG
-            value={plant.barcode}
+            value={`${window.location.origin}/plant/${plant.id}`}
             size={qr}
             level="M"
             bgColor={C.white}
@@ -218,18 +232,54 @@ function PlantLabel({ plant, cfg, logoSrc }: LabelProps) {
 export default function PrintBarcodes() {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [size, setSize] = useState<LabelSize>("md")
-  const [logoSrc, setLogoSrc] = useState("")
+  const [whiteLogoDataUrl, setWhiteLogoDataUrl] = useState<string>("")
 
-  // Pre-load logo sebagai base64 agar tersedia saat print (tidak butuh network request)
+  // Konversi logo menjadi putih untuk print (tanpa CSS filter)
   useEffect(() => {
-    fetch("/depok-logo.png")
-      .then((r) => r.blob())
-      .then((blob) => {
-        const reader = new FileReader()
-        reader.onload = () => setLogoSrc(reader.result as string)
-        reader.readAsDataURL(blob)
-      })
-      .catch(() => setLogoSrc("/depok-logo.png"))
+    const img = new Image()
+    img.onload = () => {
+      try {
+        const canvas = document.createElement("canvas")
+        canvas.width = img.width
+        canvas.height = img.height
+        const ctx = canvas.getContext("2d")
+
+        if (ctx) {
+          // Gambar logo original
+          ctx.drawImage(img, 0, 0)
+
+          // Ambil pixel data
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+          const data = imageData.data
+
+          // Ubah semua pixel non-transparan menjadi putih
+          for (let i = 0; i < data.length; i += 4) {
+            const alpha = data[i + 3]
+            if (alpha > 10) { // threshold untuk ignore pixel semi-transparan
+              // Pixel tidak transparan -> jadikan putih solid
+              data[i] = 255     // R
+              data[i + 1] = 255 // G
+              data[i + 2] = 255 // B
+              data[i + 3] = 255 // A (fully opaque)
+            }
+          }
+
+          // Tulis kembali ke canvas
+          ctx.putImageData(imageData, 0, 0)
+
+          // Convert ke base64
+          const dataUrl = canvas.toDataURL("image/png")
+          console.log("White logo created, length:", dataUrl.length)
+          setWhiteLogoDataUrl(dataUrl)
+        }
+      } catch (err) {
+        console.error("Failed to convert logo:", err)
+      }
+    }
+    img.onerror = (err) => {
+      console.error("Failed to load logo:", err)
+    }
+    img.src = depokLogo
   }, [])
 
   // Inject print + screen CSS langsung ke <head> agar tidak bentrok Tailwind
@@ -296,6 +346,8 @@ export default function PrintBarcodes() {
   return (
     <Layout>
         <div className="container py-8">
+          <BreadcrumbNav />
+
           {/* Header */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
             <div>
@@ -311,8 +363,6 @@ export default function PrintBarcodes() {
               Cetak {selectedPlants.length} Label
             </Button>
           </div>
-
-          <AdminNav />
 
           {/* Toolbar */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-4 p-4 rounded-xl border border-border/50 bg-card shadow-soft">
@@ -395,7 +445,12 @@ export default function PrintBarcodes() {
             </div>
             <div id="print-area">
               {selectedPlants.map((plant) => (
-                <PlantLabel key={plant.id} plant={plant} cfg={cfg} logoSrc={logoSrc} />
+                <PlantLabel
+                  key={plant.id}
+                  plant={plant}
+                  cfg={cfg}
+                  logoSrc={whiteLogoDataUrl || depokLogo}
+                />
               ))}
               {selectedPlants.length === 0 && (
                 <p className="text-sm text-muted-foreground py-12 mx-auto text-center w-full">

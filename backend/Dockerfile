@@ -3,6 +3,9 @@
 # ─────────────────────────────────────────
 FROM node:20-alpine AS builder
 
+# Install OpenSSL untuk Prisma
+RUN apk add --no-cache openssl
+
 WORKDIR /app
 
 # Install deps dulu (memanfaatkan layer cache)
@@ -24,6 +27,9 @@ RUN npm run build
 # Stage 2: Runner — image production
 # ─────────────────────────────────────────
 FROM node:20-alpine AS runner
+
+# Install OpenSSL untuk Prisma
+RUN apk add --no-cache openssl
 
 WORKDIR /app
 

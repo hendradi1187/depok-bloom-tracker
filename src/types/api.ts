@@ -96,3 +96,23 @@ export interface StatsSummary {
   scans_today: number;
   scans_this_week: number;
 }
+
+export type NotificationType = 'scan' | 'plant_created' | 'plant_updated' | 'plant_deleted' | 'user_created'
+
+export interface Notification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  link?: string;
+  read: boolean;
+  created_at: string;
+  metadata?: {
+    plant_id?: string;
+    plant_name?: string;
+    user_id?: string;
+    user_name?: string;
+    scan_id?: string;
+    location?: string;
+  };
+}

@@ -8,15 +8,15 @@ datasource db {
 }
 
 model User {
-  id         String      @id @default(cuid())
-  name       String
-  email      String      @unique
-  password   String
-  role       Role        @default(officer)
-  is_active  Boolean     @default(true)
-  created_at DateTime    @default(now())
-  updated_at DateTime    @updatedAt
-  scans      ScanRecord[]
+  id              String           @id @default(cuid())
+  name            String
+  email           String           @unique
+  password        String
+  role            Role             @default(officer)
+  is_active       Boolean          @default(true)
+  created_at      DateTime         @default(now())
+  updated_at      DateTime         @updatedAt
+  scans           ScanRecord[]
 
   @@map("users")
 }
@@ -30,26 +30,26 @@ model Category {
 }
 
 model Plant {
-  id               String       @id @default(cuid())
-  barcode          String       @unique
+  id               String           @id @default(cuid())
+  barcode          String           @unique
   common_name      String
   latin_name       String
-  category         Category     @relation(fields: [category_id], references: [id])
+  category         Category         @relation(fields: [category_id], references: [id])
   category_id      String
-  description      String       @default("")
-  care_guide       String       @default("")
-  location         String       @default("")
-  supplier         String       @default("")
-  supplier_contact String       @default("")
+  description      String           @default("")
+  care_guide       String           @default("")
+  location         String           @default("")
+  supplier         String           @default("")
+  supplier_contact String           @default("")
   price            Int?
-  status           PlantStatus  @default(available)
+  status           PlantStatus      @default(available)
   grade            String?
   latitude         Float?
   longitude        Float?
   images           PlantImage[]
   scans            ScanRecord[]
-  created_at       DateTime     @default(now())
-  updated_at       DateTime     @updatedAt
+  created_at       DateTime         @default(now())
+  updated_at       DateTime         @updatedAt
 
   @@map("plants")
 }
