@@ -1,7 +1,7 @@
 # Todolist Pengembangan — Flora Depok
 
 > Sistem Katalog Tanaman Hias Kota Depok
-> Terakhir diperbarui: 2026-02-21
+> Terakhir diperbarui: 2026-02-22
 
 ---
 
@@ -64,7 +64,7 @@
 
 - ✅ **3.1** Database: **PostgreSQL** (lokal)
 - ✅ **3.2** Buat `prisma/schema.prisma` dengan model: `Plant`, `Category`, `User`, `ScanRecord`, `PlantImage`
-- ⏳ **3.3** Jalankan migrasi database awal — **sesuaikan `DATABASE_URL` di `.env` dulu**
+- ✅ **3.3** Jalankan migrasi database awal — **sesuaikan `DATABASE_URL` di `.env` dulu**
 - ✅ **3.4** Buat seeder data awal dari `mockData.ts` yang ada di frontend
 - ✅ **3.5** Prisma Client sudah di-generate dan digunakan di layer service
 
@@ -183,10 +183,25 @@ Semua endpoint harus terdokumentasi di `openapi.yaml` sebelum diimplementasi.
 
 ---
 
+## FASE 9 — Polish & Data (Post-Launch)
+
+- ✅ **9.1** Navbar menampilkan status login — nama user + badge role + tombol Keluar
+- ✅ **9.2** Hapus tombol Keluar duplikat dari Admin Dashboard
+- ✅ **9.3** Tambah kategori **Bonsai** ke database dan `seed.ts`
+- ✅ **9.4** Tambah 5 tanaman bonsai: Santigi, Beringin, Serut, Asem Jawa, Cemara Udang
+- ✅ **9.5** Foto tanaman dari Wikimedia Commons — 23/23 tanaman memiliki foto (JPG, CC license)
+- ✅ **9.6** Fix `Cross-Origin-Resource-Policy: same-origin` → `cross-origin` agar gambar tampil lintas-port
+- ⏳ **9.7** Update `seed.ts` — tambah data 5 tanaman bonsai agar reproducible saat deploy ulang
+- ⏳ **9.8** Fix URL gambar di seed agar tidak hardcode `localhost:3000` (pakai CDN atau relative path)
+
+---
+
 ## Catatan Teknis
 
 - **OpenAPI Spec** disimpan di `docs/openapi.yaml` — menjadi satu sumber kebenaran (single source of truth)
 - **Frontend types** di-generate otomatis dari spec, bukan ditulis manual
-- **JWT** disimpan di `httpOnly cookie` untuk keamanan (bukan localStorage)
+- **JWT** disimpan di `localStorage` (`flora_token` + `flora_user`)
 - **Role**: `admin` (full access), `officer` (scan & view), `public` (view only, no auth)
 - Gunakan `VITE_API_URL=http://localhost:3000` di `.env.local` untuk development
+- **Foto tanaman**: disimpan di `backend/uploads/`, diakses via `http://localhost:3000/uploads/`
+- **Helmet CORP**: wajib set `crossOriginResourcePolicy: { policy: 'cross-origin' }` agar gambar bisa dimuat dari frontend port berbeda
